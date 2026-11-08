@@ -21,20 +21,20 @@ public class AccountController {
     }
 
     @GetMapping("/{id}")
-    public AccountResponse get(UUID id) { return banking.getAccount(id); }
+    public AccountResponse get(@PathVariable UUID id) { return banking.getAccount(id); }
 
     @PostMapping("/{id}/deposits")
-    public AccountResponse deposit(UUID id, @Valid @RequestBody AmountRequest request) {
+    public AccountResponse deposit(@PathVariable UUID id, @Valid @RequestBody AmountRequest request) {
         return banking.deposit(id, request.amount());
     }
 
     @PostMapping("/{id}/withdrawals")
-    public AccountResponse withdraw(UUID id, @Valid @RequestBody AmountRequest request) {
+    public AccountResponse withdraw(@PathVariable UUID id, @Valid @RequestBody AmountRequest request) {
         return banking.withdraw(id, request.amount());
     }
 
     @GetMapping("/{id}/transactions")
-    public java.util.List<TransactionResponse> history(UUID id) {
+    public java.util.List<TransactionResponse> history(@PathVariable UUID id) {
         return banking.history(id);
     }
 }
