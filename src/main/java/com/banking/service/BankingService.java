@@ -14,20 +14,20 @@ import java.util.*;
 @Service
 public class BankingService {
 
-    private final AccountRepository accounts;
+    private final AccountRepository accountRepository;
     private final TransactionRepository transactions;
 
-    public BankingService(AccountRepository accounts, TransactionRepository transactions) {
-        this.accounts = accounts;
+    public BankingService(AccountRepository accountRepository, TransactionRepository transactions) {
+        this.accountRepository = accountRepository;
         this.transactions = transactions;
     }
 
     @Transactional
     public AccountResponse createAccount(UUID id, BigDecimal openingBalance) {
         validateNonNegative(openingBalance);
-        if (accounts.existsById(id)) throw new ConflictException("Account already exists: " + id);
+        if (accountRepository.existsById(id)) throw new ConflictException("Account already exists: " + id);
         try {
-            return AccountResponse.from(accounts.save(new Account(id, openingBalance)));
+            return AccountResponse.from(accountRepository.save(new Account(id, openingBalance)));
         } catch (DataIntegrityViolationException ex) {
             throw new ConflictException("Account already exists: " + id);
         }
@@ -41,7 +41,7 @@ public class BankingService {
     @Transactional
     public AccountResponse deposit(UUID id, BigDecimal amount) {
         validatePositive(amount);
-        Account account = accounts.findByIdForUpdate(id).orElseThrow(() ->
+        Account account = accountRepository.findByIdForUpdate(id).orElseThrow(() ->
                 new ResourceNotFoundException("Account not found: " + id));
         account.credit(amount);
         transactions.save(new TransactionEntry(id, TransactionType.DEPOSIT, amount, UUID.randomUUID()));
@@ -51,7 +51,7 @@ public class BankingService {
     @Transactional
     public AccountResponse withdraw(UUID id, BigDecimal amount) {
         validatePositive(amount);
-        Account account = accounts.findByIdForUpdate(id).orElseThrow(() ->
+        Account account = accountRepository.findByIdForUpdate(id).orElseThrow(() ->
                 new ResourceNotFoundException("Account not found: " + id));
         account.debit(amount);
         transactions.save(new TransactionEntry(id, TransactionType.WITHDRAWAL, amount, UUID.randomUUID()));
@@ -64,9 +64,9 @@ public class BankingService {
         if (fromId.equals(toId)) throw new IllegalArgumentException("Source and destination must differ");
         UUID firstId = fromId.compareTo(toId) < 0 ? fromId : toId;
         UUID secondId = fromId.compareTo(toId) < 0 ? toId : fromId;
-        Account first = accounts.findByIdForUpdate(firstId).orElseThrow(() ->
+        Account first = accountRepository.findByIdForUpdate(firstId).orElseThrow(() ->
                 new ResourceNotFoundException("Account not found: " + firstId));
-        Account second = accounts.findByIdForUpdate(secondId).orElseThrow(() ->
+        Account second = accountRepository.findByIdForUpdate(secondId).orElseThrow(() ->
                 new ResourceNotFoundException("Account not found: " + secondId));
 
         Account source = fromId.equals(firstId) ? first : second;
@@ -82,13 +82,13 @@ public class BankingService {
 
     @Transactional(readOnly = true)
     public List<TransactionResponse> history(UUID accountId) {
-        if (!accounts.existsById(accountId)) throw new ResourceNotFoundException("Account not found: " + accountId);
+        if (!accountRepository.existsById(accountId)) throw new ResourceNotFoundException("Account not found: " + accountId);
         return transactions.findByAccountIdOrderByCreatedAtDesc(accountId).stream()
                 .map(TransactionResponse::from).toList();
     }
 
     private Account findAccount(UUID id) {
-        return accounts.findById(id).orElseThrow(() -> new ResourceNotFoundException("Account not found: " + id));
+        return accountRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Account not found: " + id));
     }
 
     private void validatePositive(BigDecimal amount) {
