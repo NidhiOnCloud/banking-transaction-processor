@@ -1,5 +1,6 @@
 package com.banking.model;
 
+import com.banking.exception.InsufficientBalanceException;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.util.UUID;
@@ -31,9 +32,20 @@ public class Account {
     }
 
     public void debit(BigDecimal amount) {
-        if (balance.compareTo(amount) < 0) {
-            throw new IllegalArgumentException("Insufficient funds");
+
+        if (amount == null ||
+                amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException(
+                    "Debit amount must be positive"
+            );
         }
-        balance = balance.subtract(amount);
+
+        if (this.balance.compareTo(amount) < 0) {
+            throw new InsufficientBalanceException(
+                    "Insufficient balance in account: " + this.id
+            );
+        }
+
+        this.balance = this.balance.subtract(amount);
     }
 }
